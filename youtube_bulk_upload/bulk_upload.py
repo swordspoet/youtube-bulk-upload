@@ -11,6 +11,10 @@ from google.auth.transport.requests import Request
 from googleapiclient.http import MediaFileUpload
 from enum import Enum
 
+import os
+os.environ["http_proxy"] = "http://127.0.0.1:7890"
+os.environ["https_proxy"] = "http://127.0.0.1:7890"
+
 YOUTUBE_URL_PREFIX = "https://www.youtube.com/watch?v="
 
 
@@ -113,7 +117,7 @@ class YouTubeBulkUpload:
         video_files = [
             os.path.join(self.source_directory, f)
             for f in os.listdir(self.source_directory)
-            if f.endswith(tuple(self.input_file_extensions))
+            if f.lower().endswith(tuple(self.input_file_extensions))
         ]
         if not video_files:
             self.logger.error(f"No video files found in current directory to upload.")
@@ -190,7 +194,7 @@ class YouTubeBulkUpload:
         except json.JSONDecodeError as e:
             raise Exception(f"YouTube client secrets file is not valid JSON: {self.youtube_client_secrets_file}") from e
         
-        if self.privacy_status not in VideoPrivacyStatus:
+        if self.privacy_status not in [m.value for m in VideoPrivacyStatus]:
             raise Exception(f"\"{self.privacy_status}\" is not a valid video privacy value. It must be private, public or unlisted") 
 
         self.logger.debug(f"YouTube upload checks passed")
@@ -293,7 +297,7 @@ class YouTubeBulkUpload:
                     "tags": self.youtube_keywords,
                     "categoryId": self.youtube_category_id,
                 },
-                "status": {"privacyStatus": self.privacy_status.value},
+                "status": {"privacyStatus": self.privacy_status},
             }
 
             # Use MediaFileUpload to handle the video file
